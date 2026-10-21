@@ -7,20 +7,36 @@
 """
 
 import pytest
-import requests
-from api_client import api_get
+from pathlib import Path
+import yaml
 
-# 这张表就是你平时写用例时的那张表：
-# 左边是输入，右边是预期结果
-@pytest.mark.parametrize("username, expected_status", [
-    ("torvalds", 200),                              # 正常用户
-    ("Kolin-coder", 200),                           # 正常用户
-    ("this-user-should-not-exist-12345", 404),      # 不存在的用户
-])
-def test_user_status(username, expected_status):
-    """查用户接口：不同输入，对应不同预期状态码"""
-    resp = api_get(f"/users/{username}")
+from github_api import get_user
+from github_api import list_user_repos
 
-    assert resp.status_code == expected_status, (
-        f"用户 {username}：期望 {expected_status}，实际 {resp.status_code}"
-    )
+DATA_FILE = Path(__file__).parent / "data" / "user_cases.yaml"
+
+def load_cases():
+    with open(DATA_FILE, encoding="utf-8") as f:
+        return yaml.safe_load(f)["user_status_cases"]
+
+@pytest.mark.parametrize("case", load_cases(),ids=lambda c: f"{c['username']}-{c['expected_status']}",)
+def test_user_status(case):
+    resp=get_user(case["username"])
+    # assert case["expected_status"] == 200,f"用户{case["username"]}：实际{case["expected_status"]}"
+    assert resp.status_code == case["expected_status"], (
+    f"{case['desc']}：用户 {case['username']} "
+    f"期望 {case['expected_status']}，实际 {resp.status_code}"
+)
+
+def load_repos_cases():
+    with open (DATA_FILE,encoding="utf-8") as f:
+        return yaml.safe_load(f)["repo_list_cases"]
+
+@pytest.mark.parametrize("case",load_repos_cases(),ids=lambda c: c['desc'])
+def test_repos_list_count(case):
+    resp=list_user_repos(case["username"],per_page=case["per_page"])
+
+    assert resp.status_code == 200,f"{case['desc']}:状态码{resp.status_code}"
+
+    actual=len(resp.json())
+    assert actual ==case["expected_count"],f"{case['desc']}:期望为{case["expected_count"]},实际为{actual}"

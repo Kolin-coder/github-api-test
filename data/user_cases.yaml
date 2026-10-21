@@ -1,0 +1,27 @@
+# 用户接口测试用例
+# 改这个文件不需要动任何代码
+
+user_status_cases:
+  - username: torvalds
+    expected_status: 200
+    desc: 正常用户
+  - username: Kolin-coder
+    expected_status: 200
+    desc: 正常用户
+  - username: this-user-should-not-exist-12345
+    expected_status: 404
+    desc: 不存在的用户
+    
+repo_list_cases:
+  - username: microsoft
+    per_page: 5
+    expected_count: 5
+    desc: 每页 5 条
+  - username: microsoft
+    per_page: 100
+    expected_count: 100
+    desc: 每页 100 条（接口上限）
+  - username: torvalds
+    per_page: 100
+    expected_count: 12
+    desc: 用户仓库不足 100 个，返回全部
